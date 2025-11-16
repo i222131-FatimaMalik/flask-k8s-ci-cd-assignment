@@ -1,6 +1,5 @@
 name: CI/CD Pipeline
 
-# Trigger workflow on push to main, develop, or any feature branch
 on:
   push:
     branches: ["main", "develop", "feature/**"]
@@ -41,11 +40,18 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
+      # Debug Docker username and tag
+      - name: Debug Docker info
+        run: |
+          echo "Docker username: '${{ secrets.DOCKER_USERNAME }}'"
+          echo "Docker tag: '${{ secrets.DOCKER_USERNAME }}/flask-app-ci:latest'"
+          docker --version
+          docker info
+
       # Build and push Docker image
       - name: Build and Push Docker Image
         uses: docker/build-push-action@v5
         with:
           context: .
           push: true
-          tags: "${{ secrets.DOCKER_USERNAME }}/flask-app-ci:latest"
-
+          tags: ${{ secrets.DOCKER_USERNAME }}/flask-app-ci:latest
