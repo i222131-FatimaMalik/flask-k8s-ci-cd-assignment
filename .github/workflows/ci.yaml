@@ -9,7 +9,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # Checkout the repo
+      # Checkout code
       - name: Checkout code
         uses: actions/checkout@v3
 
@@ -25,34 +25,43 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      # Run flake8 for linting
+      # Run flake8
       - name: Run flake8
         run: flake8 --max-line-length=90 .
 
-      # Run tests
+      # Run pytest
       - name: Run pytest
         run: pytest
 
-      # === Docker secrets validation ===
-      - name: Validate Docker secrets
+      # Validate and prepare Docker variables
+      - name: Prepare Docker variables
+        id: docker_vars
         run: |
-          if [ -z "${{ secrets.DOCKER_USERNAME }}" ]; then
+          # Trim whitespace from secrets
+          DOCKER_USER=$(echo "${{ secrets.DOCKER_USERNAME }}" | xargs)
+          DOCKER_PASS=$(echo "${{ secrets.DOCKER_PASSWORD }}" | xargs)
+
+          # Fail if empty
+          if [ -z "$DOCKER_USER" ]; then
             echo "ERROR: DOCKER_USERNAME secret is missing or empty"
             exit 1
           fi
-          if [ -z "${{ secrets.DOCKER_PASSWORD }}" ]; then
+          if [ -z "$DOCKER_PASS" ]; then
             echo "ERROR: DOCKER_PASSWORD secret is missing or empty"
             exit 1
           fi
-          echo "Docker username: '${{ secrets.DOCKER_USERNAME }}'"
-          echo "Docker tag: '${{ secrets.DOCKER_USERNAME }}/flask-app-ci:latest'"
+
+          # Export variables for later steps
+          echo "docker_user=$DOCKER_USER" >> $GITHUB_ENV
+          echo "docker_pass=$DOCKER_PASS" >> $GITHUB_ENV
+          echo "docker_tag=$DOCKER_USER/flask-app-ci:latest" >> $GITHUB_ENV
 
       # Log in to Docker Hub
       - name: Log in to Docker Hub
         uses: docker/login-action@v3
         with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
+          username: ${{ env.docker_user }}
+          password: ${{ env.docker_pass }}
 
       # Build and push Docker image
       - name: Build and Push Docker Image
@@ -60,4 +69,4 @@ jobs:
         with:
           context: .
           push: true
-          tags: ${{ secrets.DOCKER_USERNAME }}/flask-app-ci:latest
+          tags: ${{ env.docker_tag }}
