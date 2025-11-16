@@ -30,6 +30,9 @@ jobs:
         run: flake8 --max-line-length=90 .
 
       # Run pytest
+      - name: Run flake8
+        run: flake8 --max-line-length=90 .
+
       - name: Run pytest
         run: pytest
 
